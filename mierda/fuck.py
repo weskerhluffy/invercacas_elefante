@@ -6,7 +6,45 @@ Created on 19/07/2018
 
 # XXX: http://codeforces.com/problemset/problem/220/E
 
-from enum import Enum
+
+# XXX: https://gist.github.com/robert-king/5660418
+class RangeBit:
+
+    def __init__(self, n):
+        sz = 1
+        while n >= sz:
+            sz *= 2
+        self.size = sz
+        self.dataAdd = [0] * sz
+        self.dataMul = [0] * sz
+
+    def sum(self, i):
+        assert i > 0
+        add = 0
+        mul = 0
+        start = i
+        while i > 0:
+            add += self.dataAdd[i]
+            mul += self.dataMul[i]
+            i -= i & -i
+        return mul * start + add
+
+    def add(self, left, right, by):
+        assert 0 < left <= right
+        self._add(left, by, -by * (left - 1))
+        self._add(right, -by, by * right)
+
+    def _add(self, i, mul, add):
+        assert i > 0
+        while i < self.size:
+            self.dataAdd[i] += add
+            self.dataMul[i] += mul
+            i += i & -i
+    
+    def sum_range(self, i, j):
+        print("j {} s {}".format(j, self.sum(j)))
+        print("i {} s {}".format(i, self.sum(i)))
+        return self.sum(j) - self.sum(i - 1)
 
 
 class numero():
@@ -54,110 +92,6 @@ def crea_arreglo_enriquecido(nums):
     return numse
 
 
-# I inversion
-# F frente
-# A atras
-# D dentro
-# F fueraa
-# XXX: https://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
-CASOS_INVERSIONES = Enum("CASOS_INVERSIONES ", "IFD IFF IAD IAF NA")
-
-
-def determinar_caso(li, ld, n):
-    r = CASOS_INVERSIONES.NA
-    pf = n.posicion_final
-    pi = n.posicion_inicial
-
-    if pf > ld:
-        r = CASOS_INVERSIONES.IFF
-    else:
-        if pf > pi:
-            r = CASOS_INVERSIONES.IFD
-        else:
-            if pf < li:
-                r = CASOS_INVERSIONES.IAF
-            else:
-                if pf < pi:
-                    r = CASOS_INVERSIONES.IAD
-                else:
-                    r = CASOS_INVERSIONES.NA
-    return r
-
-
-class ventana():
-
-    def __init__(self, numse):
-        self.li = 0
-        self.ld = 0
-        self.df = set()
-        self.dam = {}
-        self.da = set()
-        self.ic = 0
-        self.numse = numse
-
-    def anadir(self, n):
-        self.ld += 1
-        assert self.ld == n.posicion_inicial, "el unm {} ld {}".format(n, self.ld)
-        assert n.posicion_inicial not in self.da
-        
-        c = determinar_caso(self.li, self.ld, n)
-        assert c != CASOS_INVERSIONES.IFD
-        
-        self.ic += len(self.df)
-        if n.posicion_inicial in self.df:
-            self.df.remove(n.posicion_inicial)
-        
-        if c == CASOS_INVERSIONES.IFF:
-            self.df.add(n.posicion_final)
-        if c == CASOS_INVERSIONES.IAF:
-            self.ic += self.ld - self.li 
-            self.da.add(n.posicion_inicial)
-        if c == CASOS_INVERSIONES.IAD:
-            self.dam[n.posicion_final] = n
-            nd = self.numse[n.posicion_final]
-            assert self.li <= nd.posicion_inicial <= self.ld
-            assert nd.posicion_inicial == n.posicion_final
-            self.ic += n.posicion_inicial - n.posicion_final
-            
-        return self.ic
-
-    def quitar(self, n):
-        assert self.li == n.posicion_inicial
-        assert n.posicion_inicial not in self.df
-        
-        c = determinar_caso(self.li, self.ld, n)
-        
-        assert c != CASOS_INVERSIONES.IAD
-        
-        if n.posicion_inicial in self.dam:
-            assert c != CASOS_INVERSIONES.NA
-            no = self.dam[n.posicion_inicial]
-            assert determinar_caso(self.li, self.ld, no) == CASOS_INVERSIONES.IAD
-            assert no.posicion_final == n.posicion_inicial
-            del self.dam[n.posicion_inicial]
-            self.da.add(no.posicion_inicial)
-        
-        e = n.posicion_inicial in self.da
-        self.da.remove(n.posicion_inicial)
-        
-        self.ic -= len(self.da)
-        assert self.ic >= 0
-            
-        self.li += 1
-        
-        if c == CASOS_INVERSIONES.IAF:
-            assert e
-        if c == CASOS_INVERSIONES.IFF:
-            self.ic -= self.ld - n.posicion_inicial
-            self.df.remove(n.posicion_final)
-        if c == CASOS_INVERSIONES.IFD:
-            nd = self.numse[n.posicion_final]
-            self.ic -= n.posicion_final - n.posicion_inicial
-            assert self.li <= nd.posicion_inicial <= self.ld
-            assert nd.posicion_inicial == n.posicion_final
-        return self.ic
-
-
 def fuerza_bruta(a):
     a_len = len(a)
     r = 0
@@ -170,28 +104,67 @@ def fuerza_bruta(a):
 
 def core(nums, nmi):
     numse = crea_arreglo_enriquecido(nums)
-    v = ventana(numse)
+    a = (list(map(lambda x:x.posicion_final + 1, numse)))
+    print(a)
     i = 0
     j = 0
     ni = 0
     r = 0
+    lmin = False
+    a_len = len(a)
+    bitch = RangeBit(a_len + 2)
+    bitch.add(a[0], a[0], 1)
+    
     while True:
-        if i != j and ni <= nmi:
-            r += 1
-        if ni < nmi:
+        if ni <= nmi:
             j += 1
-            if j == len(nums):
+            if j == a_len:
                 break
-            ni = v.anadir(numse[j])
+            bitch.add(a[j], a[j], 1)
+            ni += bitch.sum_range(a[j] + 1, a_len)
+#            print("anadido {} aora {}".format(a[j], ni))
+            lmin = True
         else:
+            bitch.add(a[i], a[i], -1)
+            if a[i] - 1:
+                ni -= bitch.sum(a[i] - 1)
+#            print("kitado {} aora {}".format(a[i], ni))
+
+            if lmin and ni > nmi:
+                n = j - i - 1
+#                print("la ventana es  i {} j {} n {}".format(i, j, n))
+                r += (n * (n + 1)) >> 1
+#                print("r aora {}".format(r))
+                
+            lmin = False
             i += 1
-            ni = v.quitar(numse[i])
         
-        caca = fuerza_bruta(list(map(lambda x:x.valor, numse[i:j + 1])))
-        assert caca == ni, "caca {} ni {} en nums {}".format(caca, ni, numse[i:j + 1])
+        caca = fuerza_bruta(a[i:j + 1])
+        assert caca == ni, "caca {} ni {} en nums {}".format(caca, ni, a[i:j + 1])
+        
+    j -= 1
+    while ni > nmi :
+        assert i < j
+        bitch.add(a[i], a[i], -1)
+        if a[i] - 1:
+            ni -= bitch.sum(a[i] - 1)
+        i += 1
+        caca = fuerza_bruta(a[i:j + 1])
+        assert caca == ni, "caca f {} ni {} en nums {}".format(caca, ni, a[i:j + 1])
+    
+    if i < j:
+        assert ni <= nmi
+        n = j - i
+#        print("la ventana f es  i {} j {} n {}".format(i, j, n))
+        r += (n * (n + 1)) >> 1
+#        print("r f aora {}".format(r))
+        
+    return r
 
 
 nums = [6, 8, 6, 7, 2, 4, 2, 1, 7, 6, 2, 1, 2, 3, 2, 5, 3, 7, 1, 7, 7]
-k = 3
+# nums = [1, 3, 2, 1, 7]
+#nums = [1, 3, 2]
+k = 0
 
 print(core(nums, k))
