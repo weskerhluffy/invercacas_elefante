@@ -5,6 +5,7 @@ Created on 19/07/2018
 '''
 
 # XXX: http://codeforces.com/problemset/problem/220/E
+#  XXX: https://practice.geeksforgeeks.org/problems/magic-triplets/0
 
 
 # XXX: https://gist.github.com/robert-king/5660418
@@ -19,15 +20,17 @@ class RangeBit:
         self.dataMul = [0] * sz
 
     def sum(self, i):
-        assert i > 0
-        add = 0
-        mul = 0
-        start = i
-        while i > 0:
-            add += self.dataAdd[i]
-            mul += self.dataMul[i]
-            i -= i & -i
-        return mul * start + add
+        r = 0
+        if i > 0:
+            add = 0
+            mul = 0
+            start = i
+            while i > 0:
+                add += self.dataAdd[i]
+                mul += self.dataMul[i]
+                i -= i & -i
+            r = mul * start + add
+        return r
 
     def add(self, left, right, by):
         assert 0 < left <= right
@@ -42,11 +45,17 @@ class RangeBit:
             i += i & -i
     
     def sum_range(self, i, j):
-        print("j {} s {}".format(j, self.sum(j)))
-        print("i {} s {}".format(i, self.sum(i)))
+#        print("j {} s {}".format(j, self.sum(j)))
+#        print("i {} s {}".format(i, self.sum(i)))
         return self.sum(j) - self.sum(i - 1)
 
+    def sum_back(self, i):
+        return self.sum_range(i, self.size - 1)
+    
+    def add_point(self, i, by):
+        self.add(i, i, by)
 
+    
 class numero():
 
     def __init__(self, valor, posicion_inicial):
@@ -78,6 +87,7 @@ def crea_arreglo_enriquecido(nums):
             numseo.append(numse[i]) 
     
     numseo = list(sorted(numseo))
+    print("nums {}".format(numseo))
 
     j = 0
     for i in range(len(nums)):
@@ -102,69 +112,71 @@ def fuerza_bruta(a):
     return r
 
 
+def quita(bi, bd, a, i):
+    return modifica(bi, bd, a, i, False)
+
+
+def anade(bi, bd, a, i):
+    return modifica(bi, bd, a, i, True)
+
+
+def modifica(bi, bd, a, i, anade):
+    if anade:
+        bc = bi
+        fac = 1
+    else:
+        bc = bd
+        fac = -1
+        
+    inv = bi.sum(a[i] + 1) + bd.sum(a[i] - 1)
+    bc.add_point(a[i], fac)
+    
+    return inv
+
+
 def core(nums, nmi):
     numse = crea_arreglo_enriquecido(nums)
-    a = (list(map(lambda x:x.posicion_final + 1, numse)))
-    print(a)
+    print("numse {}".format(numse))
+    a = list(map(lambda x:x.posicion_final + 1, numse))
+    print("a {}".format(list(map(lambda x:x - 1, a))))
     i = 0
     j = 0
     ni = 0
     r = 0
-    lmin = False
     a_len = len(a)
-    bitch = RangeBit(a_len + 2)
-    bitch.add(a[0], a[0], 1)
     
-    while True:
-        if ni <= nmi:
-            j += 1
-            if j == a_len:
-                break
-            bitch.add(a[j], a[j], 1)
-            ni += bitch.sum_range(a[j] + 1, a_len)
-#            print("anadido {} aora {}".format(a[j], ni))
-            lmin = True
-        else:
-            bitch.add(a[i], a[i], -1)
-            if a[i] - 1:
-                ni -= bitch.sum(a[i] - 1)
-#            print("kitado {} aora {}".format(a[i], ni))
+    bitch_izq = RangeBit(a_len + 2)
+    bitch_der = RangeBit(a_len + 2)
+    
+    nif = 0
+    for i, x in enumerate(a):
+        nif += bitch_der.sum_range(x + 1, a_len)
+        bitch_der.add(x, x, 1)
+        print("en x {} ({}) nif {}".format(x, numse[i].valor , nif))
 
-            if lmin and ni > nmi:
-                n = j - i - 1
-#                print("la ventana es  i {} j {} n {}".format(i, j, n))
-                r += (n * (n + 1)) >> 1
-#                print("r aora {}".format(r))
-                
-            lmin = False
-            i += 1
+    j = 0
+    ni = nif
+    print("ni ini {}".format(ni))
+    for i in range(1, a_len):
+        while j < a_len and (j < i or ni > nmi):
+            ni -= quita(bitch_izq, bitch_der, a, j)
+            print("en j {} se kito {}".format(j, ni))
+            j += 1
+        r += a_len - j
+        print("en i {} j {} anadido {} inv {}".format(i, j, a_len - j, r))
+        ni += anade(bitch_izq, bitch_der, a, i)
+        print("en i {} se puso {}".format(i, ni))
         
-        caca = fuerza_bruta(a[i:j + 1])
-        assert caca == ni, "caca {} ni {} en nums {}".format(caca, ni, a[i:j + 1])
-        
-    j -= 1
-    while ni > nmi :
-        assert i < j
-        bitch.add(a[i], a[i], -1)
-        if a[i] - 1:
-            ni -= bitch.sum(a[i] - 1)
-        i += 1
-        caca = fuerza_bruta(a[i:j + 1])
-        assert caca == ni, "caca f {} ni {} en nums {}".format(caca, ni, a[i:j + 1])
-    
-    if i < j:
-        assert ni <= nmi
-        n = j - i
-#        print("la ventana f es  i {} j {} n {}".format(i, j, n))
-        r += (n * (n + 1)) >> 1
-#        print("r f aora {}".format(r))
+#    print("r f aora {}".format(r))
         
     return r
 
 
-nums = [6, 8, 6, 7, 2, 4, 2, 1, 7, 6, 2, 1, 2, 3, 2, 5, 3, 7, 1, 7, 7]
+_, k = [int(x) for x in input().strip().split(" ")]
+nums = [int(x) for x in input().strip().split(" ")]
+# nums = [6, 8, 6, 7, 2, 4, 2, 1, 7, 6, 2, 1, 2, 3, 2, 5, 3, 7, 1, 7, 7]
 # nums = [1, 3, 2, 1, 7]
-#nums = [1, 3, 2]
-k = 0
+# nums = [1, 3, 2]
+# k = 0
 
 print(core(nums, k))
