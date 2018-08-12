@@ -243,7 +243,7 @@ static char *caca_comun_arreglo_a_cadena_entero_largo_sin_signo(
 
 	for (i = 0; i < tam_arreglo; i++) {
 		characteres_escritos += sprintf(ap_buffer + characteres_escritos,
-				"%2I64d", *(arreglo + i));
+				"%llu", *(arreglo + i));
 		if (i < tam_arreglo - 1) {
 			*(ap_buffer + characteres_escritos++) = ',';
 		}
@@ -479,7 +479,7 @@ static inline void bit_ch_aumenta(bit_ch *bit, tipo_dato nuevo_valor,
 		natural idx) {
 	tipo_dato *nodos = bit->nodos_bit_ch;
 	caca_log_debug("q verga actualizando %u con %d", idx, nuevo_valor);
-	for (natural i = idx; i && i <= bit->num_nodos_bit_ch; i += (i & (-i))) {
+	for (natural i = idx; i && i < bit->num_nodos_bit_ch; i += (i & (-i))) {
 		caca_log_debug("actualizando caca %u con %d antes %d", i, nuevo_valor,
 				nodos[i]);
 		nodos[i] += nuevo_valor;
@@ -511,7 +511,7 @@ static inline tipo_dato bit_ch_consulta_fondo(bit_ch *bit, natural i) {
 
 static inline void bit_ch_aumenta_rango(bit_ch *bit, tipo_dato nuevo_valor,
 		natural idx_ini, natural idx_fin) {
-	caca_log_debug("aumentando de %u a %u con valor %I64d", idx_ini, idx_fin,
+	caca_log_debug("aumentando de %u a %u con valor %llu", idx_ini, idx_fin,
 			nuevo_valor);
 
 	bit_ch_aumenta(bit, nuevo_valor, idx_ini);
@@ -522,16 +522,16 @@ static inline void bit_ch_aumenta_rango_consulta_rango(bit_ch *bit_puto,
 		bit_ch *bit_aux, natural idx_ini, natural idx_fin,
 		tipo_dato nuevo_valor) {
 
-	caca_log_debug("aumentando de %u a %u con valor %I64d para consulta rango",
+	caca_log_debug("aumentando de %u a %u con valor %llu para consulta rango",
 			idx_ini, idx_fin, nuevo_valor);
 
 	bit_ch_aumenta_rango(bit_puto, nuevo_valor, idx_ini, idx_fin);
 	caca_log_debug(
-			"actualizando para consulta rango inicial %d con %I64d (%I64d * %u)",
+			"actualizando para consulta rango inicial %d con %llu (%llu * %u)",
 			idx_ini, nuevo_valor * (idx_ini - 1), nuevo_valor, idx_ini - 1);
 	bit_ch_aumenta(bit_aux, nuevo_valor * (idx_ini - 1), idx_ini);
 	caca_log_debug(
-			"actualizando para consulta rango final %d con %I64d(%I64d,%u)",
+			"actualizando para consulta rango final %d con %llu(%llu,%u)",
 			idx_fin + 1, -nuevo_valor * idx_fin, -nuevo_valor, idx_fin);
 	bit_ch_aumenta(bit_aux, -nuevo_valor * idx_fin, idx_fin + 1);
 }
@@ -544,17 +544,16 @@ static inline tipo_dato bit_ch_consulta_rango_actualizado_rango(
 
 	valor_puto = bit_ch_consulta(bit_puto, idx);
 
-	caca_log_debug(
-			"el valor putual en %u es %I64d, aportara %I64d (%I64d * %u)", idx,
-			valor_puto, valor_puto * idx, valor_puto, idx);
+	caca_log_debug("el valor putual en %u es %llu, aportara %llu (%llu * %u)",
+			idx, valor_puto, valor_puto * idx, valor_puto, idx);
 
 	valor_aux = bit_ch_consulta(bit_aux, idx);
 
-	caca_log_debug("el valor aux en %u es %I64d", idx, valor_puto);
+	caca_log_debug("el valor aux en %u es %llu", idx, valor_puto);
 
 	resul = valor_puto * idx - valor_aux;
 
-	caca_log_debug("la suma acumulacaca hasta %u es %I64d", idx, resul);
+	caca_log_debug("la suma acumulacaca hasta %u es %llu", idx, resul);
 
 	return resul;
 }
@@ -567,17 +566,17 @@ static inline tipo_dato bit_ch_consulta_rango(bit_ch *bit_puto, bit_ch *bit_aux,
 
 	resul_idx_ini = bit_ch_consulta_rango_actualizado_rango(bit_puto, bit_aux,
 			idx_ini - 1);
-	caca_log_debug("la suma acumulacaca ini hasta %u es %I64d", idx_ini,
+	caca_log_debug("la suma acumulacaca ini hasta %u es %llu", idx_ini,
 			resul_idx_ini);
 
 	resul_idx_fin = bit_ch_consulta_rango_actualizado_rango(bit_puto, bit_aux,
 			idx_fin);
-	caca_log_debug("la suma acumulacaca fin hasta %u es %I64d", idx_fin,
+	caca_log_debug("la suma acumulacaca fin hasta %u es %llu", idx_fin,
 			resul_idx_fin);
 
 	resul = resul_idx_fin - resul_idx_ini;
 
-	caca_log_debug("la suma acumulacaca del rango %u-%u es %I64d", idx_ini,
+	caca_log_debug("la suma acumulacaca del rango %u-%u es %llu", idx_ini,
 			idx_fin, resul);
 
 	return resul;
@@ -639,24 +638,25 @@ static inline entero_largo_sin_signo core(natural *nums, natural nums_tam,
 	bit_ch_init(bd, 0, nums_tam);
 
 	for (natural i = 0; i < nums_tam; i++) {
-		caca_log_debug("anadiendo %u en pos %u", a[i], i);
 		inv += bit_ch_consulta_fondo(bd, a[i]);
 		bit_ch_aumenta(bd, 1, a[i]);
+		caca_log_debug("anadiendo %u en pos %u inv %llu", a[i], i, inv);
 	}
 
-	caca_log_debug("inv totales %I64d", inv);
+	caca_log_debug("inv totales %llu", inv);
 
-	anade(bi, bd, a, 0);
+	inv += anade(bi, bd, a, 0);
+	caca_log_debug("inv ini %llu", inv);
 	for (natural i = 1; i < nums_tam; i++) {
 		while (j < nums_tam && (j < i || inv > k)) {
 			inv -= quita(bi, bd, a, j);
 			j++;
-			caca_log_debug("kitando %u en pos %u inv %I64d", a[j-1], j-1, inv);
+			caca_log_debug("kitando %u en pos %u inv %llu", a[j-1], j-1, inv);
 		}
 
 		r += nums_tam - j;
 
-		caca_log_debug("en %u %u inv %I64d r %I64d", i, j, inv, r)
+		caca_log_debug("en %u %u inv %llu r %llu", i, j, inv, r)
 
 		inv += anade(bi, bd, a, i);
 	}
@@ -676,7 +676,7 @@ int main() {
 
 	scanf("%u %llu\n", &n, &k);
 	assert_timeout(n<=MAX_CACA);
-	assert_timeout(k < ((entero_largo_sin_signo )(1E18)));
+	assert_timeout(k <= ((entero_largo_sin_signo )(1E18)));
 
 	for (natural i = 0; i < n; i++) {
 		scanf("%u", &a[i]);

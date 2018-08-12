@@ -89,9 +89,9 @@ int main() {
 
 	long long ans = 0;
 	int j = 0;
-//	addLeft(0);
+	addLeft(0);
 	printf("inv ini %u\n", inv);
-	for (int i = 0; i < n; i++) {
+	for (int i = 1; i < n; i++) {
 		/*
 		 while (j < n && j < i)
 		 removeRight(j++);
