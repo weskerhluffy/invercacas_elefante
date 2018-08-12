@@ -79,27 +79,12 @@ def swap(a, i, j):
 
 
 def crea_arreglo_enriquecido(nums):
-    numso = list(sorted(nums))
-    numse = list(map(lambda t:numero(t[1], t[0]), enumerate(nums)))
-    numseo = []
-    for i in range(len(nums)):
-        if nums[i] != numso[i]:
-            numseo.append(numse[i]) 
-    
-    numseo = list(sorted(numseo))
-    print("nums {}".format(numseo))
-
-    j = 0
-    for i in range(len(nums)):
-        if nums[i] != numso[i]:
-            numse[i] = numseo[j]
-            j += 1
-        numse[i].posicion_final = i
-
-    for i in range(len(nums)):
-        while i != numse[i].posicion_inicial:
-            swap(numse, i, numse[i].posicion_inicial)
-    return numse
+    numse = list(sorted(map(lambda t:numero(t[1], t[0]), enumerate(nums))))
+    r = [0] * len(nums)
+#    print("numse {}".format(numse))
+    for i, n in enumerate(numse):
+        r[n.posicion_inicial] = i + 1
+    return r
 
 
 def fuerza_bruta(a):
@@ -128,7 +113,8 @@ def modifica(bi, bd, a, i, anade):
         bc = bd
         fac = -1
         
-    inv = bi.sum(a[i] + 1) + bd.sum(a[i] - 1)
+    inv = bi.sum_back(a[i] + 1) + bd.sum(a[i] - 1)
+#    print("num {} parte de i {} de d {} fact {}".format(a[i], bi.sum(a[i] + 1), bd.sum(a[i] - 1), fac))
     bc.add_point(a[i], fac)
     
     return inv
@@ -136,9 +122,9 @@ def modifica(bi, bd, a, i, anade):
 
 def core(nums, nmi):
     numse = crea_arreglo_enriquecido(nums)
-    print("numse {}".format(numse))
-    a = list(map(lambda x:x.posicion_final + 1, numse))
-    print("a {}".format(list(map(lambda x:x - 1, a))))
+#    print("numse {}".format(numse))
+    a = numse
+#    print("a {}".format(list(map(lambda x:x - 1, a))))
     i = 0
     j = 0
     ni = 0
@@ -152,20 +138,21 @@ def core(nums, nmi):
     for i, x in enumerate(a):
         nif += bitch_der.sum_range(x + 1, a_len)
         bitch_der.add(x, x, 1)
-        print("en x {} ({}) nif {}".format(x, numse[i].valor , nif))
+#        print("en x {} ({}) nif {}".format(x, numse[i].valor , nif))
 
     j = 0
     ni = nif
-    print("ni ini {}".format(ni))
+#    print("ni ini {}".format(ni))
+    ni += anade(bitch_izq, bitch_der, a, 0)
     for i in range(1, a_len):
         while j < a_len and (j < i or ni > nmi):
             ni -= quita(bitch_izq, bitch_der, a, j)
-            print("en j {} se kito {}".format(j, ni))
+#            print("en j {} se kito {} {}".format(j, nums[j], ni))
             j += 1
         r += a_len - j
-        print("en i {} j {} anadido {} inv {}".format(i, j, a_len - j, r))
+#        print("en i {} j {} anadido {} inv {}".format(i, j, a_len - j, ni))
         ni += anade(bitch_izq, bitch_der, a, i)
-        print("en i {} se puso {}".format(i, ni))
+#        print("en i {} se puso {}".format(i, ni))
         
 #    print("r f aora {}".format(r))
         

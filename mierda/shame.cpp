@@ -59,7 +59,9 @@ BIT bitR(101010);
 
 void addLeft(int k) {
 	inv += bitL.sumBack(a[k] + 1);
+	printf("sumado de l %u\n", inv);
 	inv += bitR.sumFront(a[k] - 1);
+	printf("sumado de r %u\n", inv);
 	bitL.update(a[k], 1);
 }
 
@@ -89,15 +91,17 @@ int main() {
 	int j = 0;
 //	addLeft(0);
 	printf("inv ini %u\n", inv);
-	for (int i = 1; i < n; i++) {
+	for (int i = 0; i < n; i++) {
 		/*
 		 while (j < n && j < i)
 		 removeRight(j++);
 		 while (j < n && inv > K)
 		 removeRight(j++);
 		 */
-		while (j < n && (j < i || inv > K))
+		while (j < n && (j < i || inv > K)) {
 			removeRight(j++);
+			printf("en j %u kitado %u %u\n", j - 1, b[j - 1], inv);
+		}
 		ans += n - j;
 		printf("ag %u en %u %u inv %u\n", n - j, i, j, inv);
 		addLeft(i);
